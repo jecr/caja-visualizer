@@ -2,8 +2,11 @@
 
 ### Este proyecto requiere:
 [Git](https://git-scm.com/)
+
 [Node - (LTS)](https://nodejs.org/es/)
+
 (Sugerido) [Visual Studio Code](https://code.visualstudio.com/)
+
 (Plugin de VSCode) ESLint
 
 ### Getting started
