@@ -1,5 +1,8 @@
 ## CAJA visualizer
 
+### Live demo del proyecto:
+[CAJA visualizer](https://arcane-tundra-90702.herokuapp.com/)
+
 ### Este proyecto requiere:
 [Git](https://git-scm.com/)
 
