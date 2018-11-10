@@ -491,17 +491,15 @@ class NetworkVis extends Component {
             .gravity(.3)
             .size([width, height]);
 
-        // Dibuja el tooltip con info del nodo señalado
-        /* var tip = d3.tip()
-            .attr('class', 'd3-tip')
-            .offset([-10, 0])
-            .html(function (d) {
-                return "<span style='color:white'>" + d.name + " | GE:" + d.inDegree + " GS:" + d.outDegree + "</span>";
-            }); */
-
         var zoom = d3.behavior.zoom()
             .scaleExtent([.1, 8])
             .on("zoom", redraw);
+
+        var currentZoom;
+
+        function getCurrentZoom() {
+            currentZoom = zoom.scale();
+        }
 
         // Se inicializa el svg
         var vis = d3.select("#network").append("svg")
@@ -511,7 +509,6 @@ class NetworkVis extends Component {
             .call(zoom)
             .append("g")
             .attr('id', 'grafo')
-            /* .call(tip) */;
 
         const grafo = document.getElementById('grafo');
 
@@ -613,8 +610,40 @@ class NetworkVis extends Component {
             .attr("class", function (d) {
                 return d.class;
             })
-            /* .on("mouseover", tip.show)
-            .on("mouseout", tip.hide) */
+            .on("mouseover", function(d){  //Mouse event
+                tooltip.style("display", null)
+            })
+            .on("mouseout", function(d){  //Mouse event
+                tooltip.style("display", "none");
+            })
+            .on("mousemove", function(d){  //Mouse event
+                getCurrentZoom();
+                var yShift;
+                if(currentZoom<0.5){
+                    yShift = 85;
+                } else if(currentZoom>3) {
+                    yShift = 20;
+                }
+                else {
+                    yShift = 40;  
+                }
+                var xPos = d3.mouse(this)[0];
+                var yPos = d3.mouse(this)[1] - yShift;
+
+                tooltip.attr("font-size", function(){
+                        if(currentZoom<0.35){
+                            return "42px";
+                        } else if(currentZoom>3) {
+                            return "12px";
+                        }
+                        else {
+                            return "18px";  
+                        } 
+                    })
+                    .attr("transform", "translate(" + xPos + ", " + yPos + ")")
+                tooltip.select("text")
+                    .text(d.name + " | GE:" + d.inDegree + " GS:" + d.outDegree)
+            })
             .on('click', function (d) {
                 if (d3.event.defaultPrevented === false) {
                     connectedNodes(d);
@@ -623,6 +652,14 @@ class NetworkVis extends Component {
                     howMany = 3;
                 }
             });
+
+        var tooltip = vis.append("g")
+            .attr("class", "tooltip")
+            .style("display", "none");
+
+        tooltip.append("text")
+            .attr("x", 15)
+            .attr("dy", "1.2em");
 
         var text = vis.selectAll(".text")
             .data(nodes)
