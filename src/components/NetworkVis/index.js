@@ -13,13 +13,9 @@ class NetworkVis extends Component {
             height
         } = this.props;
 
-
-
-
         /*======================================================================
         INFORMACION SOBRE LOS NODOS Y LOS ENLACES
         ======================================================================*/
-
 
         var totalGraphNodes = data.nodes,
             totalGraphInteractions = data.links,

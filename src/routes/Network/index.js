@@ -1,7 +1,6 @@
 import React from 'react';
-import BarChart from './BarChart';
-import data from './mockdata/sampledata.json';
-import NetworkVis from './NetworkVis';
+import data from '../../_mockdata/sampledata.json';
+import NetworkVis from '../../components/NetworkVis';
 
 const Network = (props) => (
   <div>
@@ -10,11 +9,6 @@ const Network = (props) => (
     <NetworkVis
       data={data}
       width={500}
-      height={500}
-    />
-    <BarChart
-      data={[1,2,3,5,8,13,21,34]}
-      width={700}
       height={500}
     />
   </div>

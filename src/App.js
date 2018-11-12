@@ -1,13 +1,13 @@
 import React from 'react';
-import './App.css';
-import Content from './Content';
-import Header from './Header';
+import Content from './layout/Content';
+import Header from './layout/Header';
+import { AppContainer } from './AppStyles';
 
 const App = () => (
-  <div>
+  <AppContainer>
     <Header />
     <Content />
-  </div>
+  </AppContainer>
 )
 
 export default App;

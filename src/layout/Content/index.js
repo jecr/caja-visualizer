@@ -1,15 +1,16 @@
 import React from 'react';
 import { Route, Switch } from 'react-router-dom';
-import Home from './Home';
-import Network from './Network';
+import Home from '../../routes/Home';
+import Network from '../../routes/Network';
+import { MainContainer } from './styles';
 
 const Content = () => (
-  <main>
+  <MainContainer>
     <Switch>
       <Route exact path='/' component={Home} />
       <Route path='/network/:networkID' component={Network} />
     </Switch>
-  </main>
+  </MainContainer>
     );
     
 export default Content;
