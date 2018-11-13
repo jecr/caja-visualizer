@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import _  from 'lodash';
 import d3 from 'd3';
 
 class NetworkVis extends Component {

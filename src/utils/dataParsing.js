@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import { percentage } from './general';
 
 /**
    * @description Calcula grado de entrada, grado de entrada y grado de cada nodo en la muestra final
@@ -439,59 +438,65 @@ import { percentage } from './general';
       }
     });
 
-    //Imprime en consola datos cuantitativos sobre el grafo
-    console.log(`Número de cuentas (total): ${totalGraphNodes.length}\nNúmero de interacciones (total): ${totalGraphInteractions.length}`);
-    console.log(`Número de cuentas (filtrado): ${nodes.length}\nNúmero de interacciones (filtrado): ${links.length}`);
-
-    console.log(`Número de enlaces: ${linksSample.length}`);
-    console.log("\n%c Número de cuentas según su clasificación ", "background: white; color: #222;");
-    console.log(
-      `Ciudadanos: ${numCiu} (${percentage(numCiu, nodes.length)}%)
-            \nMedios: ${numMed} (${percentage(numMed, nodes.length)}%)
-            \nPoliticos: ${numPol} (${percentage(numPol, nodes.length)}%)`
-    );
-    console.log("\n%c Número de interacciones según su tipo ", "background: white; color: #222;");
-    console.log(
-      `Retuits: ${numRT} (${percentage(numRT, links.length)}%)
-            \nRespuestas: ${numRP} (${percentage(numRP, links.length)}%)
-            \nMenciones: ${numMen} (${percentage(numMen, links.length)}%)`
-    );
-    console.log("\n%c NODOS CON MAYOR GRADO ", "background: white; color: #222;");
-    console.log(topDegree.map((n) => (`${n.name}, ${n.class}, G: ${n.degree}\n`)).join(''));
-
-    console.log("\n%c NODOS CON MAYOR GRADO DE ENTRADA ", "background: white; color: #222;");
-    console.log(topInDegree.map((n) => (`${n.name}, ${n.class}, GE: ${n.inDegree}, GS: ${n.outDegree}\n`)).join(''));
-
-    console.log("\n%c NODOS CON MAYOR GRADO DE SALIDA ", "background: white; color: #222;");
-    console.log(topOutDegree.map((n) => (`${n.name}, ${n.class}, GE: ${n.inDegree}, GS: ${n.outDegree}\n`)).join(''));
-
-    console.log("\n%c DISTRIBUCIÓN DE NODOS POR TIPO DE INTERACCION ", "background: white; color: #222;");
-    console.log(
-      `Retuits: C=${percentage(rtCiudadanos, nodesRT)}% (${rtCiudadanos}), SM=${percentage(rtMedios, nodesRT)}% (${rtMedios}), SP=${percentage(rtPoliticos, nodesRT)}% (${rtPoliticos})`
-    );
-    console.log(
-      `Respuestas: C=${percentage(rpCiudadanos, nodesRP)}% (${rpCiudadanos}), SM=${percentage(rpMedios, nodesRP)}% (${rpMedios}), SP=${percentage(rpPoliticos, nodesRP)}% (${rpPoliticos})`
-    );
-    console.log(
-      `Menciones: C=${percentage(mnCiudadanos, nodesMn)}% (${mnCiudadanos}), SM=${percentage(mnMedios, nodesMn)}% (${mnMedios}), SP=${percentage(mnPoliticos, nodesMn)}% (${mnPoliticos})`
-    );
-
-    console.log(`\nINTRA-ACTORES: ${intraActores.length} (${percentage(intraActores.length, links.length)}% del total de interacciones)`);
-    console.log(`Retuits: ${intraRt}, Respuestas: ${intraRp}, Menciones: ${intraMn}`);
-    console.log(`Intra-Ciudadanos: ${intraC} (Retuits: ${intraCRt}, Respuestas: ${intraCRp}, Menciones: ${intraCM} + ")`);
-    console.log(`Intra-Medios: ${intraM} (Retuits: ${intraMRt}, Respuestas: ${intraMRp}, Menciones: ${intraMM} + ")`);
-    console.log(`Intra-Politicos: ${intraP} (Retuits: ${intraPRt}, Respuestas: ${intraPRp}, Menciones: ${intraPM} + ")`);
-
-    console.log(`\nINTER-ACTOR: ${interActores.length} (${percentage(interActores.length, links.length)}% del total de interacciones)`);
-    console.log(`Retuits: ${interRt}, Respuestas: ${interRp}, Menciones: ${interMn}`);
-    console.log(`Inter Ciudadanos-Medios: ${interCM} (Retuits: ${interCMRt}, Respuestas: ${interCMRp}, Menciones: ${interCMM} + ")`);
-    console.log(`Inter Ciudadanos-Politicos: ${interCP} (Retuits: ${interCPRt}, Respuestas: ${interCPRp}, Menciones: ${interCPM} + ")`);
-    console.log(`Inter Politicos-Medios: ${interPM} (Retuits: ${interPMRt}, Respuestas: ${interPMRp}, Menciones: ${interPMM} + ")`);
-
     return {
       nodes,
       links,
       linksSample,
       topInDegree,
+      // Informative values:
+      interActores,
+      interCM,
+      interCMM,
+      interCMRp,
+      interCMRt,
+      interCP,
+      interCPM,
+      interCPRp,
+      interCPRt,
+      interMn,
+      interPM,
+      interPMM,
+      interPMRp,
+      interPMRt,
+      interRp,
+      interRt,
+      intraActores,
+      intraC,
+      intraCM,
+      intraCRp,
+      intraCRt,
+      intraM,
+      intraMM,
+      intraMn,
+      intraMRp,
+      intraMRt,
+      intraP,
+      intraPM,
+      intraPRp,
+      intraPRt,
+      intraRp,
+      intraRt,
+      mnCiudadanos,
+      mnMedios,
+      mnPoliticos,
+      nodesMn,
+      nodesRP,
+      nodesRT,
+      numCiu,
+      numMed,
+      numMen,
+      numPol,
+      numRP,
+      numRT,
+      rpCiudadanos,
+      rpMedios,
+      rpPoliticos,
+      rtCiudadanos,
+      rtMedios,
+      rtPoliticos,
+      topDegree,
+      topOutDegree,
+      totalGraphInteractions,
+      totalGraphNodes,
     }
   }
