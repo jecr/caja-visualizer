@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import * as d3 from 'd3';
+import _  from 'lodash';
+import d3 from 'd3';
 
 class NetworkVis extends Component {
   componentDidMount() {
@@ -23,7 +24,7 @@ class NetworkVis extends Component {
       let degree = inDegree + outDegree;
 
       return {
-        ...node,
+        ...node, // El ... es un spread operator (https://developer.mozilla.org/es/docs/Web/JavaScript/Referencia/Operadores/Spread_operator)
         degree,
         inDegree,
         outDegree
@@ -50,51 +51,31 @@ class NetworkVis extends Component {
     return nodesSortedByParam.slice(0, 10);
   }
 
-  drawNetwork() {
-    const {
-      data,
-      width,
-      height
-    } = this.props;
-
-    /*======================================================================
-    INFORMACION SOBRE LOS NODOS Y LOS ENLACES
-    ======================================================================*/
-
-    const {
-      nodes: totalGraphNodes,
-      links: totalGraphInteractions,
-      total_interactions: links,
-    } = data;
-
-    let { node_sample: nodes } = data;
-    nodes = this.getAllDegrees(nodes, links); // Calcula degree, inDegree y outDegree
-
-    console.log(`Número de cuentas (total): ${totalGraphNodes.length}\nNúmero de interacciones (total): ${totalGraphInteractions.length}`);
-    console.log(`Número de cuentas (filtrado): ${nodes.length}\nNúmero de interacciones (filtrado): ${links.length}`);
-
-    // Ordena los nodos según sus grados y crea listas con los diez primeros
-    const topDegree = this.topTen(nodes, 'degree');
-    const topInDegree = this.topTen(nodes, 'inDegree');
-    const topOutDegree = this.topTen(nodes, 'outDegree');
-
-    //Obtiene el número de interacciones por tipo de interacción
-    var numRT = 0,
-      numRP = 0,
-      numMen = 0;
-    links.forEach((link) => {
+  //Obtiene el número de interacciones por tipo de interacción
+  getInteractionsCountPerType = (linksArray) => {
+    let numRT = 0, numRP = 0, numMen = 0;
+    linksArray.forEach((link) => {
       if (link.interaction === "retweet") {
         numRT++;
       } else if (link.interaction === "reply") {
         numRP++;
       }
+
       if (link.interaction === "mention") {
         numMen++;
       }
     });
 
-    // Ordena los enlaces por origen, por destino y por tipo de interacción
-    links.sort(function (a, b) {
+    return {
+      numRT,
+      numRP,
+      numMen,
+    }
+  }
+
+  // Ordena los enlaces por origen, por destino y por tipo de interacción
+  sortLinks = (linksArray) => {
+    return linksArray.sort(function (a, b) {
       if (a.source > b.source) {
         return 1;
       } else if (a.source < b.source) {
@@ -114,91 +95,159 @@ class NetworkVis extends Component {
         }
       }
     });
+  }
+
+  drawNetwork() {
+    const {
+      data,
+      width,
+      height
+    } = this.props;
+
+    /*======================================================================
+    INFORMACION SOBRE LOS NODOS Y LOS ENLACES
+    ======================================================================*/
+
+    const {
+      nodes: totalGraphNodes,
+      links: totalGraphInteractions,
+    } = data;
+
+    let {
+      node_sample: nodes,
+      total_interactions: links,
+    } = data;
+    nodes = this.getAllDegrees(nodes, links); // Calcula degree, inDegree y outDegree
+
+    // Ordena los nodos según sus grados y crea listas con los diez primeros
+    const topDegree = this.topTen(nodes, 'degree');
+    const topInDegree = this.topTen(nodes, 'inDegree');
+    const topOutDegree = this.topTen(nodes, 'outDegree');
+
+    //Obtiene el número de interacciones por tipo de interacción
+    const { numRT, numRP, numMen } = this.getInteractionsCountPerType(links);
+
+    // Ordena los enlaces por origen, por destino y por tipo de interacción
+    links = this.sortLinks(links);
 
     // Establece el número de enlaces entre dos nodos, inicia en 1
-    links.forEach(function (d) {
-      d.linknum = 1;
-    });
+    links = links.map(link => ({ ...link, linknum: 1 })); // la forma: param => () es un return implícito (https://developer.mozilla.org/es/docs/Web/JavaScript/Referencia/Funciones/Arrow_functions)
+    
     // Aumenta el número de enlaces si hay más de un tipo de interacción
-    for (let i = 0; i < links.length; i++) {
-      if (i !== 0 &&
-        links[i].source === links[i - 1].source &&
-        links[i].target === links[i - 1].target)
-        if (links[i].interaction !== links[i - 1].interaction) {
-          links[i].linknum = links[i - 1].linknum + 1;
-        } else if (links[i].interaction === links[i - 1].interaction) {
-          links[i].linknum = links[i - 1].linknum;
+    links = links.map((link, i, linksArray) => {
+      let linksCount = 0;
+      if (
+        i !== 0 &&
+        link.source === linksArray[i - 1].source &&
+        link.target === linksArray[i - 1].target
+      ) {
+        if (link.interaction !== linksArray[i - 1].interaction) {
+          linksCount = linksArray[i - 1].linknum + 1;
+        } else if (link.interaction === linksArray[i - 1].interaction) {
+          linksCount = linksArray[i - 1].linknum;
         }
-    }
+      }
+      return {
+        ...link,
+        linknum: linksCount,
+      }
+    });
 
     // Determina si el enlace será recto o curvo
-    links.forEach(function (d) {
-      d.straight = 1;
-      if (d.linknum === 2 || d.linknum === 3) {
-        d.straight = 0;
+    links = links.map((link, i, linksAray) => {
+      let straight = 1;
+      if (link.linknum === 2 || link.linknum === 3) {
+        straight = 0;
       }
-      links.forEach(function (d1) {
-        if (d.source === d1.target && d1.source === d.target)
-          d.straight = 0;
-        else if (d.linknum === 1 && d.source === d1.source && d.target === d1.target && d1.linknum >= 2)
-          d.straight = 0;
-      });
-    });
-
-    //Calcula la frecuencia de un tipo de interacción
-    for (let i = 0; i < links.length; i++) {
-      if (i !== 0 &&
-        links[i].source === links[i - 1].source &&
-        links[i].target === links[i - 1].target)
-        if (links[i].interaction === "mention" && links[i].interaction === links[i - 1].interaction) {
-          links[i].mentions = links[i - 1].mentions + 1;
-        } else if (links[i].interaction === "reply" && links[i].interaction === links[i - 1].interaction) {
-          links[i].replies = links[i - 1].replies + 1;
-        } else if (links[i].interaction === "retweet" && links[i].interaction === links[i - 1].interaction) {
-          links[i].retuits = links[i - 1].retuits + 1;
+      linksAray.forEach((linkB) => {
+        if (link.source === linkB.target && linkB.source === link.target) {
+          straight = 0;
+        } else if (
+          link.linknum === 1 &&
+          link.source === linkB.source &&
+          link.target === linkB.target &&
+          linkB.linknum >= 2
+        ) {
+          straight = 0;
         }
-    }
-
-    //Creamos una muestra de enlaces, solo conservamos el enlace con mayor peso
-    const linksSample = [];
-    links.forEach(function (l) {
-      linksSample.push(l);
+      });
+      return {
+        ...link,
+        straight,
+      }
     });
 
-    for (let i = 0; i < linksSample.length; i++) {
-      if (i !== 0 &&
-        linksSample[i].source === linksSample[i - 1].source &&
-        linksSample[i].target === linksSample[i - 1].target &&
-        linksSample[i].interaction === linksSample[i - 1].interaction) {
+    // Calcula la frecuencia de un tipo de interacción
+    links = links.map((link, i, linksArray) => {
+      let mentions, replies, retuits;
+      if (
+        i !== 0 &&
+        link.source === linksArray[i - 1].source &&
+        link.target === linksArray[i - 1].target
+      ) {
+        if (
+          link.interaction === "mention" && link.interaction === linksArray[i - 1].interaction
+        ) {
+          mentions = linksArray[i - 1].mentions + 1;
+        } else if (
+          link.interaction === "reply" && link.interaction === linksArray[i - 1].interaction
+        ) {
+          replies = linksArray[i - 1].replies + 1;
+        } else if (
+          link.interaction === "retweet" && link.interaction === linksArray[i - 1].interaction
+        ) {
+          retuits = linksArray[i - 1].retuits + 1;
+        }
+      }
+      return {
+        ...link,
+        mentions,
+        replies,
+        retuits,
+      }
+    });
+
+    // Creamos una muestra de enlaces, solo conservamos el enlace con mayor peso
+    const linksSample = _.clone(links);
+    linksSample.forEach((link, i, linksArray) => {
+      if (
+        i !== 0 &&
+        link.source === linksArray[i - 1].source &&
+        link.target === linksArray[i - 1].target &&
+        link.interaction === linksArray[i - 1].interaction
+      ) {
         linksSample.splice(i - 1, 1);
         i -= 1;
       }
-    }
-
-    //Asigna a cada nodo un atributo por tipo de interacción. Valor inicial es false
-    nodes.forEach(function (d) {
-      d.retweeting = false;
-      d.replying = false;
-      d.mentioning = false;
     });
-    //Busca el tipo de interacción de cada enlace, y cambia el atributo de los nodos asignado en el paso anterior
-    links.forEach(function (d) {
-      if (d.interaction === "reply") {
-        nodes.forEach(function (e) {
-          if (e.name === d.target || e.name === d.source) {
-            e.replying = true;
-          }
-        });
-      } else if (d.interaction === "mention") {
-        nodes.forEach(function (e) {
-          if (e.name === d.target || e.name === d.source) {
-            e.mentioning = true;
-          }
-        });
-      } else if (d.interaction === "retweet") {
-        nodes.forEach(function (e) {
-          if (e.name === d.target || e.name === d.source) {
-            e.retweeting = true;
+
+    // Asigna a cada nodo un atributo por tipo de interacción. Valor inicial es false
+    nodes = nodes.map(node => ({
+      ...node,
+      retweeting: false,
+      replying: false,
+      mentioning: false
+    }));
+    // Busca el tipo de interacción de cada enlace, y cambia el atributo de los nodos asignado en el paso anterior OPTIMIZAR
+    links.forEach((link) => {
+      if (link.interaction) {
+        let interaction_type;
+        switch (link.interaction) {
+          case "reply":
+            interaction_type = "replying";
+            break;
+          case "mention":
+            interaction_type = "mentioning";
+            break;
+          case "retweet":
+            interaction_type = "retweeting";
+            break;
+          default:
+            break;
+        }
+        nodes.forEach((node, index) => {
+          if (node.name === link.target || node.name === link.source) {
+            nodes[index][interaction_type] = true;
           }
         });
       }
@@ -207,13 +256,10 @@ class NetworkVis extends Component {
     // Establece el radio de cada nodo con base en su grado de entrada
     let baseRadius = (Math.sqrt(1 / Math.PI)) * 5;
     let baseNodeArea = Math.PI * (baseRadius * baseRadius);
-    nodes.forEach(function (d) {
-      if (d.inDegree > 0) {
-        d.radius = Math.sqrt((baseNodeArea * (d.inDegree * 1.7)) / Math.PI);
-      } else {
-        d.radius = baseRadius;
-      }
-    });
+    nodes = nodes.map((node) => ({
+      ...node,
+      radius: node.inDegree > 0 ? Math.sqrt((baseNodeArea * (node.inDegree * 1.7)) / Math.PI) : baseRadius,
+    }));
 
     //Cuantifica el número de cuentas según su clasificación
     var numCiu = 0,
@@ -415,6 +461,9 @@ class NetworkVis extends Component {
     });
 
     //Imprime en consola datos cuantitativos sobre el grafo
+    console.log(`Número de cuentas (total): ${totalGraphNodes.length}\nNúmero de interacciones (total): ${totalGraphInteractions.length}`);
+    console.log(`Número de cuentas (filtrado): ${nodes.length}\nNúmero de interacciones (filtrado): ${links.length}`);
+
     console.log(`Número de enlaces: ${linksSample.length}`);
     console.log(
       `Ciudadanos: ${numCiu} (${porcentaje(numCiu, nodes.length)}%)
