@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import d3 from 'd3';
+import { NetworkVisContainer } from './styles';
 
 class NetworkVis extends Component {
   componentDidMount() {
@@ -9,7 +10,6 @@ class NetworkVis extends Component {
   drawNetwork() {
     const {
       data,
-      width,
       height
     } = this.props;
 
@@ -31,8 +31,7 @@ class NetworkVis extends Component {
         return (d.inDegree + 1) * (-180);
       })
       .linkDistance(40)
-      .gravity(.3)
-      .size([width, height]);
+      .gravity(.3);
 
     var zoom = d3.behavior.zoom()
       .scaleExtent([.1, 8])
@@ -46,7 +45,6 @@ class NetworkVis extends Component {
 
     // Se inicializa el svg
     var vis = d3.select("#network").append("svg")
-      .attr("width", width)
       .attr("height", height)
       .attr("pointer-events", "all")
       .call(zoom)
@@ -1223,7 +1221,7 @@ class NetworkVis extends Component {
   }
 
   render() {
-    return <div id={`network`}></div>
+    return <NetworkVisContainer id={`network`} />
   }
 }
 
