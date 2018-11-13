@@ -1,7 +1,19 @@
 import styled from 'styled-components';
 
 export const Log = styled.div`
-  column-count: 3;
+  column-count: 1;
+
+  @media (min-width: 480px) {
+    column-count: 2;
+  }
+
+  @media (min-width: 760px) {
+    column-count: 3;
+  }
+
+  @media (min-width: 1600px) {
+    column-count: 4;
+  }
   
   & span {
     font-size: 0.7em;
