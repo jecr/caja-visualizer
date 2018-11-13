@@ -73,6 +73,34 @@ class NetworkVis extends Component {
     }
   }
 
+  percentage = (value, total) => (
+    ((value * 100) / total).toFixed(2)
+  )
+
+  getDistributionByInteractionType = (nodesArray, interactionType) => {
+    const total = _.reduce(nodesArray, (result, value, key) => (
+      nodesArray[key][interactionType] ? result + 1 : result
+    ), 0);
+    const medios = _.reduce(nodesArray, (result, value, key) => (
+      nodesArray[key].class === "medio" &&
+        nodesArray[key][interactionType] ? result + 1 : result
+    ), 0);
+    const politicos = _.reduce(nodesArray, (result, value, key) => (
+      nodesArray[key].class === "politico" &&
+        nodesArray[key][interactionType] ? result + 1 : result
+    ), 0);
+    const ciudadanos = _.reduce(nodesArray, (result, value, key) => (
+      nodesArray[key].class === "ciudadano" &&
+        nodesArray[key][interactionType] ? result + 1 : result
+    ), 0);
+    return {
+      total,
+      medios,
+      politicos,
+      ciudadanos,
+    }
+  }
+
   // Ordena los enlaces por origen, por destino y por tipo de interacción
   sortLinks = (linksArray) => {
     return linksArray.sort(function (a, b) {
@@ -97,13 +125,7 @@ class NetworkVis extends Component {
     });
   }
 
-  drawNetwork() {
-    const {
-      data,
-      width,
-      height
-    } = this.props;
-
+  parseRawNetworkData = (dataObject) => {
     /*======================================================================
     INFORMACION SOBRE LOS NODOS Y LOS ENLACES
     ======================================================================*/
@@ -111,12 +133,12 @@ class NetworkVis extends Component {
     const {
       nodes: totalGraphNodes,
       links: totalGraphInteractions,
-    } = data;
+    } = dataObject;
 
     let {
       node_sample: nodes,
       total_interactions: links,
-    } = data;
+    } = dataObject;
     nodes = this.getAllDegrees(nodes, links); // Calcula degree, inDegree y outDegree
 
     // Ordena los nodos según sus grados y crea listas con los diez primeros
@@ -262,80 +284,47 @@ class NetworkVis extends Component {
     }));
 
     //Cuantifica el número de cuentas según su clasificación
-    var numCiu = 0,
-      numMed = 0,
-      numPol = 0;
-    nodes.forEach(function (n) {
-      if (n.class === "ciudadano") {
-        numCiu++;
-      } else if (n.class === "medio") {
-        numMed++;
-      } else if (n.class === "politico") {
-        numPol++;
-      }
-    });
+    const numCiu = _.reduce(nodes, (result, value, key) => (
+      nodes[key].class === "ciudadano" ? result + 1 : result
+    ), 0);
+    const numMed = _.reduce(nodes, (result, value, key) => (
+      nodes[key].class === "medio" ? result + 1 : result
+    ), 0);
+    const numPol = _.reduce(nodes, (result, value, key) => (
+      nodes[key].class === "politico" ? result + 1 : result
+    ), 0);
 
     //Distribución de nodos en RETUITS
-    var nodesRT = 0,
-      rtMedios = 0,
-      rtPoliticos = 0,
-      rtCiudadanos = 0;
-    nodes.forEach(function (n) {
-      if (n.retweeting) {
-        nodesRT++;
-        if (n.class === "medio") {
-          rtMedios++;
-        } else if (n.class === "politico") {
-          rtPoliticos++;
-        } else if (n.class === "ciudadano") {
-          rtCiudadanos++;
-        }
-      }
-    });
+    const {
+      total: nodesRT,
+      medios: rtMedios,
+      politicos: rtPoliticos,
+      ciudadanos: rtCiudadanos,
+    } = this.getDistributionByInteractionType(nodes, "retweeting");
 
     //Distribución de nodos en REPLIES
-    var nodesRP = 0,
-      rpMedios = 0,
-      rpPoliticos = 0,
-      rpCiudadanos = 0;
-    nodes.forEach(function (n) {
-      if (n.replying) {
-        nodesRP++;
-        if (n.class === "medio") {
-          rpMedios++;
-        } else if (n.class === "politico") {
-          rpPoliticos++;
-        } else if (n.class === "ciudadano") {
-          rpCiudadanos++;
-        }
-      }
-    });
+    const {
+      total: nodesRP,
+      medios: rpMedios,
+      politicos: rpPoliticos,
+      ciudadanos: rpCiudadanos,
+    } = this.getDistributionByInteractionType(nodes, "replying");
 
     //Distribución de nodos en MENCIONES
-    var nodesMn = 0,
-      mnMedios = 0,
-      mnPoliticos = 0,
-      mnCiudadanos = 0;
-    nodes.forEach(function (n) {
-      if (n.mentioning) {
-        nodesMn++;
-        if (n.class === "medio") {
-          mnMedios++;
-        } else if (n.class === "politico") {
-          mnPoliticos++;
-        } else if (n.class === "ciudadano") {
-          mnCiudadanos++;
-        }
-      }
-    });
+    const {
+      total: nodesMn,
+      medios: mnMedios,
+      politicos: mnPoliticos,
+      ciudadanos: mnCiudadanos,
+    } = this.getDistributionByInteractionType(nodes, "mentioning");
 
     //Añade los nodos completos (i.e.toda la info, no solo el nombre) a source y target en los enlaces
-    links.forEach(function (l) {
-      nodes.forEach(function (n) {
-        if (l.source === n.name) {
-          l.source = n;
-        } else if (l.target === n.name) {
-          l.target = n;
+    links.forEach((link, index) => {
+      nodes.forEach((node) => {
+        if (link.source === node.name) {
+          links[index].source = node;
+        } else if (link.target === node.name) {
+          links[index].target = node;
         }
       });
     });
@@ -465,15 +454,17 @@ class NetworkVis extends Component {
     console.log(`Número de cuentas (filtrado): ${nodes.length}\nNúmero de interacciones (filtrado): ${links.length}`);
 
     console.log(`Número de enlaces: ${linksSample.length}`);
+    console.log("\n%c Número de cuentas según su clasificación ", "background: white; color: #222;");
     console.log(
-      `Ciudadanos: ${numCiu} (${porcentaje(numCiu, nodes.length)}%)
-            \nMedios: ${numMed} (${porcentaje(numMed, nodes.length)}%)
-            \nPoliticos: ${numPol} (${porcentaje(numPol, nodes.length)}%)`
+      `Ciudadanos: ${numCiu} (${this.percentage(numCiu, nodes.length)}%)
+            \nMedios: ${numMed} (${this.percentage(numMed, nodes.length)}%)
+            \nPoliticos: ${numPol} (${this.percentage(numPol, nodes.length)}%)`
     );
+    console.log("\n%c Número de interacciones según su tipo ", "background: white; color: #222;");
     console.log(
-      `Retuits: ${numRT} (${porcentaje(numRT, links.length)}%)
-            \nRespuestas: ${numRP} (${porcentaje(numRP, links.length)}%)
-            \nMenciones: ${numMen} (${porcentaje(numMen, links.length)}%)`
+      `Retuits: ${numRT} (${this.percentage(numRT, links.length)}%)
+            \nRespuestas: ${numRP} (${this.percentage(numRP, links.length)}%)
+            \nMenciones: ${numMen} (${this.percentage(numMen, links.length)}%)`
     );
     console.log("\n%c NODOS CON MAYOR GRADO ", "background: white; color: #222;");
     console.log(topDegree.map((n) => (`${n.name}, ${n.class}, G: ${n.degree}\n`)).join(''));
@@ -486,26 +477,48 @@ class NetworkVis extends Component {
 
     console.log("\n%c DISTRIBUCIÓN DE NODOS POR TIPO DE INTERACCION ", "background: white; color: #222;");
     console.log(
-      `Retuits: C=${porcentaje(rtCiudadanos, nodesRT)}% (${rtCiudadanos}), SM=${porcentaje(rtMedios, nodesRT)}% (${rtMedios}), SP=${porcentaje(rtPoliticos, nodesRT)}% (${rtPoliticos})`
+      `Retuits: C=${this.percentage(rtCiudadanos, nodesRT)}% (${rtCiudadanos}), SM=${this.percentage(rtMedios, nodesRT)}% (${rtMedios}), SP=${this.percentage(rtPoliticos, nodesRT)}% (${rtPoliticos})`
     );
     console.log(
-      `Respuestas: C=${porcentaje(rpCiudadanos, nodesRP)}% (${rpCiudadanos}), SM=${porcentaje(rpMedios, nodesRP)}% (${rpMedios}), SP=${porcentaje(rpPoliticos, nodesRP)}% (${rpPoliticos})`
+      `Respuestas: C=${this.percentage(rpCiudadanos, nodesRP)}% (${rpCiudadanos}), SM=${this.percentage(rpMedios, nodesRP)}% (${rpMedios}), SP=${this.percentage(rpPoliticos, nodesRP)}% (${rpPoliticos})`
     );
     console.log(
-      `Menciones: C=${porcentaje(mnCiudadanos, nodesMn)}% (${mnCiudadanos}), SM=${porcentaje(mnMedios, nodesMn)}% (${mnMedios}), SP=${porcentaje(mnPoliticos, nodesMn)}% (${mnPoliticos})`
+      `Menciones: C=${this.percentage(mnCiudadanos, nodesMn)}% (${mnCiudadanos}), SM=${this.percentage(mnMedios, nodesMn)}% (${mnMedios}), SP=${this.percentage(mnPoliticos, nodesMn)}% (${mnPoliticos})`
     );
 
-    console.log(`\nINTRA-ACTORES: ${intraActores.length} (${porcentaje(intraActores.length, links.length)}% del total de interacciones)`);
+    console.log(`\nINTRA-ACTORES: ${intraActores.length} (${this.percentage(intraActores.length, links.length)}% del total de interacciones)`);
     console.log(`Retuits: ${intraRt}, Respuestas: ${intraRp}, Menciones: ${intraMn}`);
     console.log(`Intra-Ciudadanos: ${intraC} (Retuits: ${intraCRt}, Respuestas: ${intraCRp}, Menciones: ${intraCM} + ")`);
     console.log(`Intra-Medios: ${intraM} (Retuits: ${intraMRt}, Respuestas: ${intraMRp}, Menciones: ${intraMM} + ")`);
     console.log(`Intra-Politicos: ${intraP} (Retuits: ${intraPRt}, Respuestas: ${intraPRp}, Menciones: ${intraPM} + ")`);
 
-    console.log(`\nINTER-ACTOR: ${interActores.length} (${porcentaje(interActores.length, links.length)}% del total de interacciones)`);
+    console.log(`\nINTER-ACTOR: ${interActores.length} (${this.percentage(interActores.length, links.length)}% del total de interacciones)`);
     console.log(`Retuits: ${interRt}, Respuestas: ${interRp}, Menciones: ${interMn}`);
     console.log(`Inter Ciudadanos-Medios: ${interCM} (Retuits: ${interCMRt}, Respuestas: ${interCMRp}, Menciones: ${interCMM} + ")`);
     console.log(`Inter Ciudadanos-Politicos: ${interCP} (Retuits: ${interCPRt}, Respuestas: ${interCPRp}, Menciones: ${interCPM} + ")`);
     console.log(`Inter Politicos-Medios: ${interPM} (Retuits: ${interPMRt}, Respuestas: ${interPMRp}, Menciones: ${interPMM} + ")`);
+
+    return {
+      nodes,
+      links,
+      linksSample,
+      topInDegree,
+    }
+  }
+
+  drawNetwork() {
+    const {
+      data,
+      width,
+      height
+    } = this.props;
+
+    const {
+      nodes,
+      links,
+      linksSample,
+      topInDegree,
+    } = this.parseRawNetworkData(data);
 
 
     /*======================================================================
@@ -1126,13 +1139,13 @@ class NetworkVis extends Component {
       });
 
     var cambiaTamanio = 0;
+    const baseRadius = (Math.sqrt(1 / Math.PI)) * 5;
+    const baseNodeArea = Math.PI * (baseRadius * baseRadius);
     d3.selectAll("#degree input")
       .on("click", function (d) {
         if (d3.select("#inDegree")
           .property("checked") === true) {
           nodes.forEach(function (d) {
-            baseRadius = (Math.sqrt(1 / Math.PI)) * 5;
-            baseNodeArea = Math.PI * (baseRadius * baseRadius);
             if (d.inDegree > 0) {
               d.radius = Math.sqrt((baseNodeArea * (d.inDegree * 1.7)) / Math.PI);
             } else {
@@ -1169,8 +1182,6 @@ class NetworkVis extends Component {
         } else if (d3.select("#outDegree")
           .property("checked") === true) {
           nodes.forEach(function (d) {
-            baseRadius = (Math.sqrt(1 / Math.PI)) * 5;
-            baseNodeArea = Math.PI * (baseRadius * baseRadius);
             if (d.outDegree > 0) {
               d.radius = Math.sqrt((baseNodeArea * (d.outDegree * 1.7)) / Math.PI);
             } else {
@@ -1483,9 +1494,11 @@ class NetworkVis extends Component {
     var tamanio = 0;
 
     function sameSize() {
+      const baseRadius = (Math.sqrt(1 / Math.PI)) * 5;
+      const baseNodeArea = Math.PI * (baseRadius * baseRadius);
+
       if (tamanio === 0) {
         nodes.forEach(function (d) {
-          baseRadius = (Math.sqrt(1 / Math.PI)) * 5;
           d.radius = baseRadius;
         });
         node.attr("r", function (n) {
@@ -1516,8 +1529,6 @@ class NetworkVis extends Component {
         tamanio = 1;
       } else if (tamanio === 1 && cambiaTamanio === 0) {
         nodes.forEach(function (d) {
-          baseRadius = (Math.sqrt(1 / Math.PI)) * 5;
-          baseNodeArea = Math.PI * (baseRadius * baseRadius);
           if (d.inDegree > 0) {
             d.radius = Math.sqrt((baseNodeArea * (d.inDegree * 1.7)) / Math.PI);
           } else {
@@ -1553,8 +1564,6 @@ class NetworkVis extends Component {
         tamanio = 0;
       } else if (tamanio === 1 && cambiaTamanio === 1) {
         nodes.forEach(function (d) {
-          baseRadius = (Math.sqrt(1 / Math.PI)) * 5;
-          baseNodeArea = Math.PI * (baseRadius * baseRadius);
           if (d.outDegree > 0) {
             d.radius = Math.sqrt((baseNodeArea * (d.outDegree * 1.7)) / Math.PI);
           } else {
@@ -1711,13 +1720,6 @@ class NetworkVis extends Component {
           howMany = 3;
         }
       });
-
-    function porcentaje(d, total) {
-      return ((d * 100) / total)
-        .toFixed(2);
-    }
-
-
   }
 
   render() {
