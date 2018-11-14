@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import d3 from 'd3';
 import { NetworkVisContainer } from './styles';
+import './index.css';
 
 class NetworkVis extends Component {
   componentDidMount() {
